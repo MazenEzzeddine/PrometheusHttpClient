@@ -18,20 +18,23 @@ public class PrometheusHttpClient {
         System.out.println("Welcome to the URI tester.\n");
 
 
-        String uri = "api/v1/query_range?query=sum(delta(kafka_consumergroup_current_offset%7Bconsumergroup%3D~%22__strimzi-topic-operator-kstreams%22%2C" +
+       /* String uri = "api/v1/query_range?query=sum(delta(kafka_consumergroup_current_offset%7Bconsumergroup%3D~%22__strimzi-topic-operator-kstreams%22%2C" +
                 "topic%3D~%22(__consumer_offsets%7C__strimzi-topic-operator-kstreams-topic-store-changelog%7C__strimzi_store_topic%7Ctest%7Ctesttopic1)" +
-                "%22%2C%20namespace%3D~%22default%22%7D%5B1m%5D)%2F60)%20by%20(consumergroup%2C%20topic)&start=1647150045&end=1647153645&step=15";
+                "%22%2C%20namespace%3D~%22default%22%7D%5B1m%5D)%2F60)%20by%20(consumergroup%2C%20topic)&start=1647150045&end=1647153645&step=15";*/
 
-        String server = "http://prometheus-operated:9090/";
 
-        String url = server + uri;
+
+
+        String all3 = "http://prometheus-operated:9090/api/v1/query?" +
+                "query=sum(rate(kafka_topic_partition_current_offset%7Btopic=%22testtopic1%22,namespace=%22default%22%7D%5B1m%5D))%20by%20(topic)";
+
         while (true) {
 
 
             try {
 
                 HttpRequest request = HttpRequest.newBuilder()
-                        .uri(new URI(url))
+                        .uri(new URI(all3))
                         .GET()
                         .build();
 
