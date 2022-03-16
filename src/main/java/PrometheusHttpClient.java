@@ -1,9 +1,14 @@
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Scanner;
 
 
@@ -42,6 +47,7 @@ public class PrometheusHttpClient {
 
                 if (response.statusCode() == 200) {
                     System.out.println(response.body() + "\n");
+                    parseJson(response.body());
                 } else {
                     System.out.println("Error: status = "
                             + response.statusCode()
@@ -51,10 +57,38 @@ public class PrometheusHttpClient {
             } catch (IllegalArgumentException | IOException | InterruptedException | URISyntaxException ex) {
                 System.out.println("That is not a valid URI.\n");
             }
-            System.out.println("sleeping for 15000ms");
-            Thread.sleep(15000);
+            System.out.println("sleeping for 5000ms");
+            Thread.sleep(5000);
 
         }
+    }
+
+
+    private static void parseJson(String json) {
+        JSONObject jsonObject = JSONObject.parseObject(json);
+        JSONObject j2 = (JSONObject)jsonObject.get("data");
+
+        JSONArray inter = j2.getJSONArray("result");
+        JSONObject jobj = (JSONObject) inter.get(0);
+
+        JSONArray jreq = jobj.getJSONArray("value");
+
+        System.out.println("time stamp: " + jreq.getString(0));
+        System.out.println("arrival rate: " + Double.parseDouble( jreq.getString(1)));
+
+
+
+
+        //System.out.println((System.currentTimeMillis()));
+
+        String ts = jreq.getString(0);
+        ts = ts.replace(".", "");
+        //TODO attention to the case where after the . there are less less than 3 digits
+        SimpleDateFormat sdf = new SimpleDateFormat("MMM dd,yyyy HH:mm:ss");
+        Date d = new Date(Long.parseLong(ts));
+        System.out.println("date to corresponding timestamp : " + sdf.format(d));
+
+        System.out.println("==================================================");
     }
 
 }
