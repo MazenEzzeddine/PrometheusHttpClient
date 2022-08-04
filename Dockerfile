@@ -11,7 +11,7 @@ ENV DEBUG_OPTIONS="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address
 
 
 #COPY ./scripts/ /bin
-#COPY ./src/main/resources/log4j2.properties /bin/log4j2.properties
+COPY ./src/main/resources/log4j2.properties /bin/log4j2.properties
 
 ADD target/prometheushttpclient-1.0-SNAPSHOT.jar /
 

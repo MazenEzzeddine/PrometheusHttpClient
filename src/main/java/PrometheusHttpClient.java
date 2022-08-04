@@ -67,10 +67,20 @@ public class PrometheusHttpClient {
 
 
 
+        //sum(rate(kafka_topic_partition_current_offset{topic=~"$topic", namespace=~"$kubernetes_namespace"}[1m])) by (topic)
+
+
 
         String all3 = "http://prometheus-operated:9090/api/v1/query?" +
                 "query=sum(rate(kafka_topic_partition_current_offset%7Btopic=%22testtopic1%22,namespace=%22default%22%7D%5B1m%5D))%20by%20(topic)";
+
+
+      //  "sum(kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22, namespace=%22kubernetes_namespace%7D)%20by%20(consumergroup,topic)"
+        //sum(kafka_consumergroup_lag{consumergroup=~"$consumergroup",topic=~"$topic", namespace=~"$kubernetes_namespace"}) by (consumergroup, topic)
+
+        String all4= "http://prometheus-operated:9090/api/v1/query?query=" + "sum(kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22,namespace=%22default%22%7D)%20by%20(consumergroup,topic)";
         Double totalArrivalRate =0.0;
+        Double lag = 0.0;
 
         while (true) {
 
@@ -83,11 +93,32 @@ public class PrometheusHttpClient {
 
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
+
                 if (response.statusCode() == 200) {
                     System.out.println(response.body() + "\n");
                     totalArrivalRate=parseJson(response.body());
-                    queryConsumerGroup();
-                    youMightWanttoScale(totalArrivalRate);
+                   /* queryConsumerGroup();
+                    youMightWanttoScale(totalArrivalRate);*/
+                } else {
+                    System.out.println("Error: status = "
+                            + response.statusCode()
+                            + "\n");
+                }
+
+                HttpRequest requestg = HttpRequest.newBuilder()
+                        .uri(new URI(all4))
+                        .GET()
+                        .build();
+
+                HttpResponse<String> responseg = client.send(requestg, HttpResponse.BodyHandlers.ofString());
+
+
+
+                if (responseg.statusCode() == 200) {
+                    System.out.println(responseg.body() + "\n");
+                    lag=parseJsonLag(responseg.body());
+                    /*queryConsumerGroup();
+                    youMightWanttoScale(totalArrivalRate);*/
                 } else {
                     System.out.println("Error: status = "
                             + response.statusCode()
@@ -173,6 +204,34 @@ public class PrometheusHttpClient {
         log.info("==================================================");
         return Double.parseDouble( jreq.getString(1));
     }
+
+
+    private static Double parseJsonLag(String json) {
+        //json string from prometheus
+        //{"status":"success","data":{"resultType":"vector","result":[{"metric":{"topic":"testtopic1"},"value":[1659006264.066,"144.05454545454546"]}]}}
+        JSONObject jsonObject = JSONObject.parseObject(json);
+        JSONObject j2 = (JSONObject)jsonObject.get("data");
+
+        JSONArray inter = j2.getJSONArray("result");
+        JSONObject jobj = (JSONObject) inter.get(0);
+
+        JSONArray jreq = jobj.getJSONArray("value");
+
+        System.out.println("time stamp: " + jreq.getString(0));
+        System.out.println("lag: " + Double.parseDouble( jreq.getString(1)));
+
+        //System.out.println((System.currentTimeMillis()));
+
+        String ts = jreq.getString(0);
+        ts = ts.replace(".", "");
+        //TODO attention to the case where after the . there are less less than 3 digits
+        SimpleDateFormat sdf = new SimpleDateFormat("MMM dd,yyyy HH:mm:ss");
+        Date d = new Date(Long.parseLong(ts));
+        log.info(" timestamp {} corresponding date {} :", ts, sdf.format(d));
+        log.info("==================================================");
+        return Double.parseDouble( jreq.getString(1));
+    }
+
 
 
     private static void upScaleLogic(double totalArrivalRate, int size) {
