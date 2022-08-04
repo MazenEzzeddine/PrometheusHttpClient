@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
@@ -82,6 +83,9 @@ public class PrometheusHttpClient {
         Double totalArrivalRate =0.0;
         Double lag = 0.0;
 
+        CompletableFuture<HttpResponse<String>> f1 = new CompletableFuture<>();
+        CompletableFuture<HttpResponse<String>> f2 = new CompletableFuture<>();
+
         while (true) {
 
             try {
@@ -91,41 +95,61 @@ public class PrometheusHttpClient {
                         .GET()
                         .build();
 
-                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-
-                if (response.statusCode() == 200) {
-                    System.out.println(response.body() + "\n");
-                    totalArrivalRate=parseJson(response.body());
-                   /* queryConsumerGroup();
-                    youMightWanttoScale(totalArrivalRate);*/
-                } else {
-                    System.out.println("Error: status = "
-                            + response.statusCode()
-                            + "\n");
-                }
-
                 HttpRequest requestg = HttpRequest.newBuilder()
                         .uri(new URI(all4))
                         .GET()
                         .build();
 
-                HttpResponse<String> responseg = client.send(requestg, HttpResponse.BodyHandlers.ofString());
+                //HttpResponse<String> responseg = client.send(requestg, HttpResponse.BodyHandlers.ofString());
+
+                //HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+                CompletableFuture<HttpResponse<String> > response = CompletableFuture.supplyAsync(() -> {
+                    try {
+                        return client.send(request, HttpResponse.BodyHandlers.ofString());
+                    } catch (IOException  | InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    return null;
+                });
+
+                CompletableFuture<HttpResponse<String> > responseg = CompletableFuture.supplyAsync(() -> {
+                    try {
+                        return client.send(request, HttpResponse.BodyHandlers.ofString());
+                    } catch (IOException  | InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    return null;
+                });
+
+
+                if (response.get().statusCode() == 200) {
+                    System.out.println(response.get().body() + "\n");
+                    totalArrivalRate=parseJson(response.get().body());
+                   /* queryConsumerGroup();
+                    youMightWanttoScale(totalArrivalRate);*/
+                } else {
+                    System.out.println("Error: status = "
+                            + response.get().statusCode()
+                            + "\n");
+                }
 
 
 
-                if (responseg.statusCode() == 200) {
-                    System.out.println(responseg.body() + "\n");
-                    lag=parseJsonLag(responseg.body());
+
+
+                if (responseg.get().statusCode() == 200) {
+                    System.out.println(responseg.get().body() + "\n");
+                    lag=parseJsonLag(responseg.get().body());
                     /*queryConsumerGroup();
                     youMightWanttoScale(totalArrivalRate);*/
                 } else {
                     System.out.println("Error: status = "
-                            + response.statusCode()
+                            + response.get().statusCode()
                             + "\n");
                 }
 
-            } catch (IllegalArgumentException | IOException | InterruptedException | URISyntaxException ex) {
+            } catch (IllegalArgumentException | InterruptedException | URISyntaxException ex) {
                 System.out.println("That is not a valid URI.\n");
             }
             log.info("sleeping for 5000ms");
