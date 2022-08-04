@@ -58,8 +58,10 @@ public class PrometheusHttpClient {
         lastUpScaleDecision = Instant.now();
         lastDownScaleDecision = Instant.now();
 
+        //System.out.println(".\n");
+
+
         HttpClient client = HttpClient.newHttpClient();
-        System.out.println("Welcome to the URI tester.\n");
 
 
 
@@ -71,9 +73,6 @@ public class PrometheusHttpClient {
         Double totalArrivalRate =0.0;
 
         while (true) {
-
-
-
 
             try {
 
@@ -87,6 +86,8 @@ public class PrometheusHttpClient {
                 if (response.statusCode() == 200) {
                     System.out.println(response.body() + "\n");
                     totalArrivalRate=parseJson(response.body());
+                    queryConsumerGroup();
+                    youMightWanttoScale(totalArrivalRate);
                 } else {
                     System.out.println("Error: status = "
                             + response.statusCode()
@@ -96,11 +97,8 @@ public class PrometheusHttpClient {
             } catch (IllegalArgumentException | IOException | InterruptedException | URISyntaxException ex) {
                 System.out.println("That is not a valid URI.\n");
             }
-            queryConsumerGroup();
-            youMightWanttoScale(totalArrivalRate);
-            System.out.println("sleeping for 5000ms");
+            log.info("sleeping for 5000ms");
             Thread.sleep(5000);
-
         }
     }
 
@@ -117,6 +115,7 @@ public class PrometheusHttpClient {
 
 
     private static void readEnvAndCrateAdminClient() {
+        log.info("inside read env");
         sleep = Long.valueOf(System.getenv("SLEEP"));
         topic = System.getenv("TOPIC");
         poll = Long.valueOf(System.getenv("POLL"));
@@ -128,7 +127,6 @@ public class PrometheusHttpClient {
     }
 
     private static void youMightWanttoScale(double totalArrivalRate) throws ExecutionException, InterruptedException {
-        log.info("Inside you youMightWanttoScale");
         int size = consumerGroupDescriptionMap.get(PrometheusHttpClient.CONSUMER_GROUP).members().size();
         log.info("curent group size is {}", size);
 
@@ -151,6 +149,8 @@ public class PrometheusHttpClient {
 
 
     private static Double parseJson(String json) {
+        //json string from prometheus
+        //{"status":"success","data":{"resultType":"vector","result":[{"metric":{"topic":"testtopic1"},"value":[1659006264.066,"144.05454545454546"]}]}}
         JSONObject jsonObject = JSONObject.parseObject(json);
         JSONObject j2 = (JSONObject)jsonObject.get("data");
 
@@ -162,9 +162,6 @@ public class PrometheusHttpClient {
         System.out.println("time stamp: " + jreq.getString(0));
         System.out.println("arrival rate: " + Double.parseDouble( jreq.getString(1)));
 
-
-
-
         //System.out.println((System.currentTimeMillis()));
 
         String ts = jreq.getString(0);
@@ -172,27 +169,22 @@ public class PrometheusHttpClient {
         //TODO attention to the case where after the . there are less less than 3 digits
         SimpleDateFormat sdf = new SimpleDateFormat("MMM dd,yyyy HH:mm:ss");
         Date d = new Date(Long.parseLong(ts));
-        System.out.println("date to corresponding timestamp : " + sdf.format(d));
-
-        System.out.println("==================================================");
-
+        log.info(" timestamp {} corresponding date {} :", ts, sdf.format(d));
+        log.info("==================================================");
         return Double.parseDouble( jreq.getString(1));
     }
 
 
     private static void upScaleLogic(double totalArrivalRate, int size) {
-        if ((totalArrivalRate * 1000) > size *poll) {
+
+        log.info("current totalArrivalRate {}, group size {}", totalArrivalRate, size);
+        if (totalArrivalRate > size *poll) {
             log.info("Consumers are less than nb partition we can scale");
-
             try (final KubernetesClient k8s = new DefaultKubernetesClient()) {
-
                 k8s.apps().deployments().inNamespace("default").withName("cons1persec").scale(size + 1);
-
-
                 log.info("Since  arrival rate {} is greater than  maximum consumption rate " +
-                        "{} ,  I up scaled  by one ", totalArrivalRate * 1000, size * poll);
+                        "{} ,  I up scaled  by one ", totalArrivalRate , size * poll);
             }
-
             lastUpScaleDecision = Instant.now();
             lastDownScaleDecision = Instant.now();
         }
@@ -202,11 +194,11 @@ public class PrometheusHttpClient {
 
 
     private static void downScaleLogic(double totalArrivalRate, int size) {
-        if ((totalArrivalRate * 1000) < (size - 1) * poll) {
+        if ((totalArrivalRate ) < (size - 1) * poll) {
 
             log.info("since  arrival rate {} is lower than maximum consumption rate " +
                             " with size - 1  I down scaled  by one {}",
-                    totalArrivalRate * 1000, size * poll);
+                    totalArrivalRate, size * poll);
             try (final KubernetesClient k8s = new DefaultKubernetesClient()) {
                 int replicas = k8s.apps().deployments().inNamespace("default").withName("cons1persec").get().getSpec().getReplicas();
                 if (replicas > 1) {
