@@ -10,12 +10,10 @@ import java.net.http.HttpResponse;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -53,7 +51,7 @@ public class PrometheusHttpClient {
 
 
 
-    public static void main(String[] args) throws InterruptedException, ExecutionException {
+    public static void main(String[] args) throws InterruptedException, ExecutionException, URISyntaxException {
 
         readEnvAndCrateAdminClient();
         lastUpScaleDecision = Instant.now();
@@ -65,95 +63,162 @@ public class PrometheusHttpClient {
         HttpClient client = HttpClient.newHttpClient();
 
 
-
-
-
         //sum(rate(kafka_topic_partition_current_offset{topic=~"$topic", namespace=~"$kubernetes_namespace"}[1m])) by (topic)
-
 
 
         String all3 = "http://prometheus-operated:9090/api/v1/query?" +
                 "query=sum(rate(kafka_topic_partition_current_offset%7Btopic=%22testtopic1%22,namespace=%22default%22%7D%5B1m%5D))%20by%20(topic)";
 
+        String p0 =   "http://prometheus-operated:9090/api/v1/query?" +
+                "query=sum(rate(kafka_topic_partition_current_offset%7Btopic=%22testtopic1%22,partition=%220%22,namespace=%22default%22%7D%5B1m%5D))";
 
-      //  "sum(kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22, namespace=%22kubernetes_namespace%7D)%20by%20(consumergroup,topic)"
+        String p1 =   "http://prometheus-operated:9090/api/v1/query?" +
+                "query=sum(rate(kafka_topic_partition_current_offset%7Btopic=%22testtopic1%22,partition=%221%22,namespace=%22default%22%7D%5B1m%5D))";
+        String p2 =   "http://prometheus-operated:9090/api/v1/query?" +
+                "query=sum(rate(kafka_topic_partition_current_offset%7Btopic=%22testtopic1%22,partition=%222%22,namespace=%22default%22%7D%5B1m%5D))";
+        String p3 =   "http://prometheus-operated:9090/api/v1/query?" +
+                "query=sum(rate(kafka_topic_partition_current_offset%7Btopic=%22testtopic1%22,partition=%223%22,namespace=%22default%22%7D%5B1m%5D))";
+        String p4 =   "http://prometheus-operated:9090/api/v1/query?" +
+                "query=sum(rate(kafka_topic_partition_current_offset%7Btopic=%22testtopic1%22,partition=%224%22,namespace=%22default%22%7D%5B1m%5D))";
+
+
+        //  "sum(kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22, namespace=%22kubernetes_namespace%7D)%20by%20(consumergroup,topic)"
         //sum(kafka_consumergroup_lag{consumergroup=~"$consumergroup",topic=~"$topic", namespace=~"$kubernetes_namespace"}) by (consumergroup, topic)
 
-        String all4= "http://prometheus-operated:9090/api/v1/query?query=" + "sum(kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22,namespace=%22default%22%7D)%20by%20(consumergroup,topic)";
-        Double totalArrivalRate =0.0;
-        Double lag = 0.0;
+        String all4 = "http://prometheus-operated:9090/api/v1/query?query=" + "sum(kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22,namespace=%22default%22%7D)%20by%20(consumergroup,topic)";
 
-        CompletableFuture<HttpResponse<String>> f1 = new CompletableFuture<>();
-        CompletableFuture<HttpResponse<String>> f2 = new CompletableFuture<>();
+
+        String p0lag = "http://prometheus-operated:9090/api/v1/query?query=" + "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22,partition=%220%22,namespace=%22default%22%7D";
+
+        String p1lag = "http://prometheus-operated:9090/api/v1/query?query=" + "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22,partition=%221%22,namespace=%22default%22%7D";
+        String p2lag = "http://prometheus-operated:9090/api/v1/query?query=" + "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22,partition=%222%22,namespace=%22default%22%7D";
+
+        String p3lag = "http://prometheus-operated:9090/api/v1/query?query=" + "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22,partition=%223%22,namespace=%22default%22%7D";
+
+        String p4lag = "http://prometheus-operated:9090/api/v1/query?query=" + "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22,partition=%224%22,namespace=%22default%22%7D";
+
+        List<URI> targets = Arrays.asList(
+                new URI(all3),
+                new URI(all4));
+
+
+
+        List<URI> partitions = Arrays.asList(
+                new URI(p0),
+                new URI(p1),
+                new URI(p2),
+                new URI(p3),
+                new URI(p4)
+
+
+                );
+
+
+
+
+        List<URI> partitionslag = Arrays.asList(
+                new URI(p0lag),
+                new URI(p1lag),
+                new URI(p2lag),
+                new URI(p3lag),
+                new URI(p4lag)
+
+
+        );
+
+
+        //////
+        //public void getURIs(List<URI> uris) {
+        //    HttpClient client = HttpClient.newHttpClient();
+        //    List<HttpRequest> requests = uris.stream()
+        //            .map(HttpRequest::newBuilder)
+        //            .map(reqBuilder -> reqBuilder.build())
+        //            .collect(toList());
+        //
+        //    CompletableFuture.allOf(requests.stream()
+        //            .map(request -> client.sendAsync(request, ofString()))
+        //            .toArray(CompletableFuture<?>[]::new))
+        //            .join();
+        //}
+        /////
+
 
         while (true) {
 
-            try {
-
-                HttpRequest request = HttpRequest.newBuilder()
-                        .uri(new URI(all3))
-                        .GET()
-                        .build();
-
-                HttpRequest requestg = HttpRequest.newBuilder()
-                        .uri(new URI(all4))
-                        .GET()
-                        .build();
-
-                //HttpResponse<String> responseg = client.send(requestg, HttpResponse.BodyHandlers.ofString());
-
-                //HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-                CompletableFuture<HttpResponse<String> > response = CompletableFuture.supplyAsync(() -> {
-                    try {
-                        return client.send(request, HttpResponse.BodyHandlers.ofString());
-                    } catch (IOException  | InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    return null;
-                });
-
-                CompletableFuture<HttpResponse<String> > responseg = CompletableFuture.supplyAsync(() -> {
-                    try {
-                        return client.send(request, HttpResponse.BodyHandlers.ofString());
-                    } catch (IOException  | InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    return null;
-                });
 
 
-                if (response.get().statusCode() == 200) {
-                    System.out.println(response.get().body() + "\n");
-                    totalArrivalRate=parseJson(response.get().body());
-                   /* queryConsumerGroup();
-                    youMightWanttoScale(totalArrivalRate);*/
+
+
+
+                List<CompletableFuture<String>> futures = targets.stream()
+                        .map(target -> client
+                                .sendAsync(
+                                        HttpRequest.newBuilder(target).GET().build(),
+                                        HttpResponse.BodyHandlers.ofString())
+                                .thenApply(HttpResponse::body))
+                        .collect(Collectors.toList());
+
+
+            List<CompletableFuture<String>> partitionsfutures = partitions.stream()
+                    .map(target -> client
+                            .sendAsync(
+                                    HttpRequest.newBuilder(target).GET().build(),
+                                    HttpResponse.BodyHandlers.ofString())
+                            .thenApply(HttpResponse::body))
+                    .collect(Collectors.toList());
+
+
+            List<CompletableFuture<String>> partitionslagfuture = partitionslag.stream()
+                    .map(target -> client
+                            .sendAsync(
+                                    HttpRequest.newBuilder(target).GET().build(),
+                                    HttpResponse.BodyHandlers.ofString())
+                            .thenApply(HttpResponse::body))
+                    .collect(Collectors.toList());
+
+
+
+
+
+
+            boolean arrival = true;
+            for (CompletableFuture cf : futures) {
+                if(arrival) {
+                    parseJson((String) cf.get());
                 } else {
-                    System.out.println("Error: status = "
-                            + response.get().statusCode()
-                            + "\n");
+                    parseJsonLag((String) cf.get());
                 }
-
-
-
-
-
-                if (responseg.get().statusCode() == 200) {
-                    System.out.println(responseg.get().body() + "\n");
-                    lag=parseJsonLag(responseg.get().body());
-                    /*queryConsumerGroup();
-                    youMightWanttoScale(totalArrivalRate);*/
-                } else {
-                    System.out.println("Error: status = "
-                            + response.get().statusCode()
-                            + "\n");
-                }
-
-            } catch (IllegalArgumentException | InterruptedException | URISyntaxException ex) {
-                System.out.println("That is not a valid URI.\n");
+            arrival = !arrival;
             }
-            log.info("sleeping for 5000ms");
-            Thread.sleep(5000);
+
+
+
+            int partitionn = 0;
+            for (CompletableFuture cf : partitionsfutures) {
+                parseJsonArrivalRate((String) cf.get(), partitionn);
+                 partitionn++;
+
+            }
+
+          partitionn = 0;
+            for (CompletableFuture cf : partitionslagfuture) {
+                parseJsonArrivalLag((String) cf.get(), partitionn);
+                partitionn++;
+
+            }
+
+
+
+                log.info("sleeping for 5000ms");
+            log.info("==================================================");
+
+            try {
+                    Thread.sleep(5000);
+
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
         }
     }
 
@@ -200,6 +265,71 @@ public class PrometheusHttpClient {
         }else {
             log.info("Not checking  down scale logic, down scale cool down has not ended yet");
         }
+    }
+
+
+
+    private static Double parseJsonArrivalRate(String json, int p) {
+        //json string from prometheus
+        //{"status":"success","data":{"resultType":"vector","result":[{"metric":{"topic":"testtopic1"},"value":[1659006264.066,"144.05454545454546"]}]}}
+        //log.info(json);
+        JSONObject jsonObject = JSONObject.parseObject(json);
+        JSONObject j2 = (JSONObject)jsonObject.get("data");
+
+        JSONArray inter = j2.getJSONArray("result");
+        JSONObject jobj = (JSONObject) inter.get(0);
+
+        JSONArray jreq = jobj.getJSONArray("value");
+
+
+        ///String partition = jobjpartition.getString("partition");
+        log.info("the partition is {}", p);
+
+
+        System.out.println("time stamp: " + jreq.getString(0));
+        System.out.println("partition arrival rate: " + Double.parseDouble( jreq.getString(1)));
+
+        //System.out.println((System.currentTimeMillis()));
+
+        String ts = jreq.getString(0);
+        ts = ts.replace(".", "");
+        //TODO attention to the case where after the . there are less less than 3 digits
+        SimpleDateFormat sdf = new SimpleDateFormat("MMM dd,yyyy HH:mm:ss");
+        Date d = new Date(Long.parseLong(ts));
+        log.info(" timestamp {} corresponding date {} :", ts, sdf.format(d));
+        return Double.parseDouble( jreq.getString(1));
+    }
+
+
+    private static Double parseJsonArrivalLag(String json, int p) {
+        //json string from prometheus
+        //{"status":"success","data":{"resultType":"vector","result":[{"metric":{"topic":"testtopic1"},"value":[1659006264.066,"144.05454545454546"]}]}}
+        //log.info(json);
+        JSONObject jsonObject = JSONObject.parseObject(json);
+        JSONObject j2 = (JSONObject)jsonObject.get("data");
+
+        JSONArray inter = j2.getJSONArray("result");
+        JSONObject jobj = (JSONObject) inter.get(0);
+
+        JSONArray jreq = jobj.getJSONArray("value");
+
+
+        ///String partition = jobjpartition.getString("partition");
+        log.info("the partition is {}", p);
+
+
+        System.out.println("time stamp: " + jreq.getString(0));
+        System.out.println("partition lag " + Double.parseDouble( jreq.getString(1)));
+
+        //System.out.println((System.currentTimeMillis()));
+
+        String ts = jreq.getString(0);
+        ts = ts.replace(".", "");
+        //TODO attention to the case where after the . there are less less than 3 digits
+        SimpleDateFormat sdf = new SimpleDateFormat("MMM dd,yyyy HH:mm:ss");
+        Date d = new Date(Long.parseLong(ts));
+        log.info(" timestamp {} corresponding date {} :", ts, sdf.format(d));
+        return Double.parseDouble( jreq.getString(1));
     }
 
 
@@ -252,7 +382,6 @@ public class PrometheusHttpClient {
         SimpleDateFormat sdf = new SimpleDateFormat("MMM dd,yyyy HH:mm:ss");
         Date d = new Date(Long.parseLong(ts));
         log.info(" timestamp {} corresponding date {} :", ts, sdf.format(d));
-        log.info("==================================================");
         return Double.parseDouble( jreq.getString(1));
     }
 
