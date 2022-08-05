@@ -127,20 +127,7 @@ public class PrometheusHttpClient {
         );
 
 
-        //////
-        //public void getURIs(List<URI> uris) {
-        //    HttpClient client = HttpClient.newHttpClient();
-        //    List<HttpRequest> requests = uris.stream()
-        //            .map(HttpRequest::newBuilder)
-        //            .map(reqBuilder -> reqBuilder.build())
-        //            .collect(toList());
-        //
-        //    CompletableFuture.allOf(requests.stream()
-        //            .map(request -> client.sendAsync(request, ofString()))
-        //            .toArray(CompletableFuture<?>[]::new))
-        //            .join();
-        //}
-        /////
+
 
 
         while (true) {
