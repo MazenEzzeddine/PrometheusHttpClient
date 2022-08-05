@@ -33,7 +33,6 @@ public class PrometheusHttpClient {
 
     static Instant lastUpScaleDecision;
     static Instant lastDownScaleDecision;
-
     static Long sleep;
     static String topic;
     static String cluster;
@@ -42,7 +41,6 @@ public class PrometheusHttpClient {
     public static String CONSUMER_GROUP;
     public static AdminClient admin = null;
     static Map<String, ConsumerGroupDescription> consumerGroupDescriptionMap;
-
     static int size;
 
 
@@ -52,23 +50,13 @@ public class PrometheusHttpClient {
 
 
     public static void main(String[] args) throws InterruptedException, ExecutionException, URISyntaxException {
-
         readEnvAndCrateAdminClient();
         lastUpScaleDecision = Instant.now();
         lastDownScaleDecision = Instant.now();
 
-        //System.out.println(".\n");
-
-
         HttpClient client = HttpClient.newHttpClient();
-
-
-        //sum(rate(kafka_topic_partition_current_offset{topic=~"$topic", namespace=~"$kubernetes_namespace"}[1m])) by (topic)
-
-
         String all3 = "http://prometheus-operated:9090/api/v1/query?" +
                 "query=sum(rate(kafka_topic_partition_current_offset%7Btopic=%22testtopic1%22,namespace=%22default%22%7D%5B1m%5D))%20by%20(topic)";
-
         String p0 =   "http://prometheus-operated:9090/api/v1/query?" +
                 "query=sum(rate(kafka_topic_partition_current_offset%7Btopic=%22testtopic1%22,partition=%220%22,namespace=%22default%22%7D%5B1m%5D))";
 
@@ -102,19 +90,13 @@ public class PrometheusHttpClient {
                 new URI(all4));
 
 
-
         List<URI> partitions = Arrays.asList(
                 new URI(p0),
                 new URI(p1),
                 new URI(p2),
                 new URI(p3),
                 new URI(p4)
-
-
                 );
-
-
-
 
         List<URI> partitionslag = Arrays.asList(
                 new URI(p0lag),
@@ -122,8 +104,6 @@ public class PrometheusHttpClient {
                 new URI(p2lag),
                 new URI(p3lag),
                 new URI(p4lag)
-
-
         );
 
 
@@ -131,11 +111,6 @@ public class PrometheusHttpClient {
 
 
         while (true) {
-
-
-
-
-
 
                 List<CompletableFuture<String>> futures = targets.stream()
                         .map(target -> client
@@ -164,10 +139,6 @@ public class PrometheusHttpClient {
                     .collect(Collectors.toList());
 
 
-
-
-
-
             boolean arrival = true;
             for (CompletableFuture cf : futures) {
                 if(arrival) {
@@ -181,22 +152,31 @@ public class PrometheusHttpClient {
 
 
             int partitionn = 0;
+            Double totalarrivals=0.0;
             for (CompletableFuture cf : partitionsfutures) {
-                parseJsonArrivalRate((String) cf.get(), partitionn);
+               totalarrivals += parseJsonArrivalRate((String) cf.get(), partitionn);
                  partitionn++;
 
             }
+            log.info("totalArrivalRate {}", totalarrivals);
 
           partitionn = 0;
+            Double totallag=0.0;
+
             for (CompletableFuture cf : partitionslagfuture) {
-                parseJsonArrivalLag((String) cf.get(), partitionn);
-                partitionn++;
+                totallag += parseJsonArrivalLag((String) cf.get(), partitionn);
+             partitionn++;
+
 
             }
 
 
+            log.info("totallag {}", totallag);
 
-                log.info("sleeping for 5000ms");
+
+
+
+            log.info("sleeping for 5000ms");
             log.info("==================================================");
 
             try {
@@ -273,7 +253,7 @@ public class PrometheusHttpClient {
         log.info("the partition is {}", p);
 
 
-        System.out.println("time stamp: " + jreq.getString(0));
+        /*System.out.println("time stamp: " + jreq.getString(0));*/
         System.out.println("partition arrival rate: " + Double.parseDouble( jreq.getString(1)));
 
         //System.out.println((System.currentTimeMillis()));
@@ -281,9 +261,9 @@ public class PrometheusHttpClient {
         String ts = jreq.getString(0);
         ts = ts.replace(".", "");
         //TODO attention to the case where after the . there are less less than 3 digits
-        SimpleDateFormat sdf = new SimpleDateFormat("MMM dd,yyyy HH:mm:ss");
+       /* SimpleDateFormat sdf = new SimpleDateFormat("MMM dd,yyyy HH:mm:ss");
         Date d = new Date(Long.parseLong(ts));
-        log.info(" timestamp {} corresponding date {} :", ts, sdf.format(d));
+        log.info(" timestamp {} corresponding date {} :", ts, sdf.format(d));*/
         return Double.parseDouble( jreq.getString(1));
     }
 
@@ -305,7 +285,9 @@ public class PrometheusHttpClient {
         log.info("the partition is {}", p);
 
 
+/*
         System.out.println("time stamp: " + jreq.getString(0));
+*/
         System.out.println("partition lag " + Double.parseDouble( jreq.getString(1)));
 
         //System.out.println((System.currentTimeMillis()));
@@ -313,9 +295,9 @@ public class PrometheusHttpClient {
         String ts = jreq.getString(0);
         ts = ts.replace(".", "");
         //TODO attention to the case where after the . there are less less than 3 digits
-        SimpleDateFormat sdf = new SimpleDateFormat("MMM dd,yyyy HH:mm:ss");
+      /*  SimpleDateFormat sdf = new SimpleDateFormat("MMM dd,yyyy HH:mm:ss");
         Date d = new Date(Long.parseLong(ts));
-        log.info(" timestamp {} corresponding date {} :", ts, sdf.format(d));
+        log.info(" timestamp {} corresponding date {} :", ts, sdf.format(d));*/
         return Double.parseDouble( jreq.getString(1));
     }
 
@@ -331,7 +313,7 @@ public class PrometheusHttpClient {
 
         JSONArray jreq = jobj.getJSONArray("value");
 
-        System.out.println("time stamp: " + jreq.getString(0));
+        /*System.out.println("time stamp: " + jreq.getString(0));*/
         System.out.println("arrival rate: " + Double.parseDouble( jreq.getString(1)));
 
         //System.out.println((System.currentTimeMillis()));
@@ -341,8 +323,8 @@ public class PrometheusHttpClient {
         //TODO attention to the case where after the . there are less less than 3 digits
         SimpleDateFormat sdf = new SimpleDateFormat("MMM dd,yyyy HH:mm:ss");
         Date d = new Date(Long.parseLong(ts));
-        log.info(" timestamp {} corresponding date {} :", ts, sdf.format(d));
-        log.info("==================================================");
+       /* log.info(" timestamp {} corresponding date {} :", ts, sdf.format(d));*/
+//        log.info("==================================================");
         return Double.parseDouble( jreq.getString(1));
     }
 
@@ -358,7 +340,9 @@ public class PrometheusHttpClient {
 
         JSONArray jreq = jobj.getJSONArray("value");
 
+/*
         System.out.println("time stamp: " + jreq.getString(0));
+*/
         System.out.println("lag: " + Double.parseDouble( jreq.getString(1)));
 
         //System.out.println((System.currentTimeMillis()));
@@ -368,7 +352,7 @@ public class PrometheusHttpClient {
         //TODO attention to the case where after the . there are less less than 3 digits
         SimpleDateFormat sdf = new SimpleDateFormat("MMM dd,yyyy HH:mm:ss");
         Date d = new Date(Long.parseLong(ts));
-        log.info(" timestamp {} corresponding date {} :", ts, sdf.format(d));
+       /* log.info(" timestamp {} corresponding date {} :", ts, sdf.format(d));*/
         return Double.parseDouble( jreq.getString(1));
     }
 
