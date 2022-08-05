@@ -44,11 +44,6 @@ public class PrometheusHttpClient {
     static int size;
 
 
-
-
-
-
-
     public static void main(String[] args) throws InterruptedException, ExecutionException, URISyntaxException {
         readEnvAndCrateAdminClient();
         lastUpScaleDecision = Instant.now();
@@ -59,7 +54,6 @@ public class PrometheusHttpClient {
                 "query=sum(rate(kafka_topic_partition_current_offset%7Btopic=%22testtopic1%22,namespace=%22default%22%7D%5B1m%5D))%20by%20(topic)";
         String p0 =   "http://prometheus-operated:9090/api/v1/query?" +
                 "query=sum(rate(kafka_topic_partition_current_offset%7Btopic=%22testtopic1%22,partition=%220%22,namespace=%22default%22%7D%5B1m%5D))";
-
         String p1 =   "http://prometheus-operated:9090/api/v1/query?" +
                 "query=sum(rate(kafka_topic_partition_current_offset%7Btopic=%22testtopic1%22,partition=%221%22,namespace=%22default%22%7D%5B1m%5D))";
         String p2 =   "http://prometheus-operated:9090/api/v1/query?" +
@@ -74,21 +68,16 @@ public class PrometheusHttpClient {
         //sum(kafka_consumergroup_lag{consumergroup=~"$consumergroup",topic=~"$topic", namespace=~"$kubernetes_namespace"}) by (consumergroup, topic)
 
         String all4 = "http://prometheus-operated:9090/api/v1/query?query=" + "sum(kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22,namespace=%22default%22%7D)%20by%20(consumergroup,topic)";
-
-
         String p0lag = "http://prometheus-operated:9090/api/v1/query?query=" + "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22,partition=%220%22,namespace=%22default%22%7D";
-
         String p1lag = "http://prometheus-operated:9090/api/v1/query?query=" + "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22,partition=%221%22,namespace=%22default%22%7D";
         String p2lag = "http://prometheus-operated:9090/api/v1/query?query=" + "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22,partition=%222%22,namespace=%22default%22%7D";
-
         String p3lag = "http://prometheus-operated:9090/api/v1/query?query=" + "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22,partition=%223%22,namespace=%22default%22%7D";
-
         String p4lag = "http://prometheus-operated:9090/api/v1/query?query=" + "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22,partition=%224%22,namespace=%22default%22%7D";
 
         List<URI> targets = Arrays.asList(
                 new URI(all3),
-                new URI(all4));
-
+                new URI(all4)
+        );
 
         List<URI> partitions = Arrays.asList(
                 new URI(p0),
@@ -97,7 +86,6 @@ public class PrometheusHttpClient {
                 new URI(p3),
                 new URI(p4)
                 );
-
         List<URI> partitionslag = Arrays.asList(
                 new URI(p0lag),
                 new URI(p1lag),
@@ -106,11 +94,9 @@ public class PrometheusHttpClient {
                 new URI(p4lag)
         );
 
-
-
-
-
         while (true) {
+
+            Instant start = Instant.now();
 
                 List<CompletableFuture<String>> futures = targets.stream()
                         .map(target -> client
@@ -150,7 +136,6 @@ public class PrometheusHttpClient {
             }
 
 
-
             int partitionn = 0;
             Double totalarrivals=0.0;
             for (CompletableFuture cf : partitionsfutures) {
@@ -161,20 +146,18 @@ public class PrometheusHttpClient {
             log.info("totalArrivalRate {}", totalarrivals);
 
           partitionn = 0;
-            Double totallag=0.0;
+          Double totallag=0.0;
 
             for (CompletableFuture cf : partitionslagfuture) {
                 totallag += parseJsonArrivalLag((String) cf.get(), partitionn);
-             partitionn++;
-
-
+                partitionn++;
             }
-
 
             log.info("totallag {}", totallag);
 
+            Instant end = Instant.now();
 
-
+            log.info("Duration in seconds to query prometheus for arrival rate and lag and parse result {}", Duration.between(start,end).toMillis());
 
             log.info("sleeping for 5000ms");
             log.info("==================================================");
@@ -185,7 +168,6 @@ public class PrometheusHttpClient {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-
         }
     }
 
@@ -242,28 +224,12 @@ public class PrometheusHttpClient {
         //log.info(json);
         JSONObject jsonObject = JSONObject.parseObject(json);
         JSONObject j2 = (JSONObject)jsonObject.get("data");
-
         JSONArray inter = j2.getJSONArray("result");
         JSONObject jobj = (JSONObject) inter.get(0);
-
         JSONArray jreq = jobj.getJSONArray("value");
-
-
         ///String partition = jobjpartition.getString("partition");
         log.info("the partition is {}", p);
-
-
-        /*System.out.println("time stamp: " + jreq.getString(0));*/
-        System.out.println("partition arrival rate: " + Double.parseDouble( jreq.getString(1)));
-
-        //System.out.println((System.currentTimeMillis()));
-
-        String ts = jreq.getString(0);
-        ts = ts.replace(".", "");
-        //TODO attention to the case where after the . there are less less than 3 digits
-       /* SimpleDateFormat sdf = new SimpleDateFormat("MMM dd,yyyy HH:mm:ss");
-        Date d = new Date(Long.parseLong(ts));
-        log.info(" timestamp {} corresponding date {} :", ts, sdf.format(d));*/
+        log.info("partition arrival rate: {}", Double.parseDouble( jreq.getString(1)));
         return Double.parseDouble( jreq.getString(1));
     }
 
@@ -274,30 +240,13 @@ public class PrometheusHttpClient {
         //log.info(json);
         JSONObject jsonObject = JSONObject.parseObject(json);
         JSONObject j2 = (JSONObject)jsonObject.get("data");
-
         JSONArray inter = j2.getJSONArray("result");
         JSONObject jobj = (JSONObject) inter.get(0);
-
         JSONArray jreq = jobj.getJSONArray("value");
-
-
-        ///String partition = jobjpartition.getString("partition");
         log.info("the partition is {}", p);
 
+        log.info("partition lag  {}",  Double.parseDouble( jreq.getString(1)));
 
-/*
-        System.out.println("time stamp: " + jreq.getString(0));
-*/
-        System.out.println("partition lag " + Double.parseDouble( jreq.getString(1)));
-
-        //System.out.println((System.currentTimeMillis()));
-
-        String ts = jreq.getString(0);
-        ts = ts.replace(".", "");
-        //TODO attention to the case where after the . there are less less than 3 digits
-      /*  SimpleDateFormat sdf = new SimpleDateFormat("MMM dd,yyyy HH:mm:ss");
-        Date d = new Date(Long.parseLong(ts));
-        log.info(" timestamp {} corresponding date {} :", ts, sdf.format(d));*/
         return Double.parseDouble( jreq.getString(1));
     }
 
@@ -312,19 +261,7 @@ public class PrometheusHttpClient {
         JSONObject jobj = (JSONObject) inter.get(0);
 
         JSONArray jreq = jobj.getJSONArray("value");
-
-        /*System.out.println("time stamp: " + jreq.getString(0));*/
-        System.out.println("arrival rate: " + Double.parseDouble( jreq.getString(1)));
-
-        //System.out.println((System.currentTimeMillis()));
-
-        String ts = jreq.getString(0);
-        ts = ts.replace(".", "");
-        //TODO attention to the case where after the . there are less less than 3 digits
-        SimpleDateFormat sdf = new SimpleDateFormat("MMM dd,yyyy HH:mm:ss");
-        Date d = new Date(Long.parseLong(ts));
-       /* log.info(" timestamp {} corresponding date {} :", ts, sdf.format(d));*/
-//        log.info("==================================================");
+        //log.info("arrival rate: " + Double.parseDouble( jreq.getString(1)));
         return Double.parseDouble( jreq.getString(1));
     }
 
@@ -334,25 +271,17 @@ public class PrometheusHttpClient {
         //{"status":"success","data":{"resultType":"vector","result":[{"metric":{"topic":"testtopic1"},"value":[1659006264.066,"144.05454545454546"]}]}}
         JSONObject jsonObject = JSONObject.parseObject(json);
         JSONObject j2 = (JSONObject)jsonObject.get("data");
-
         JSONArray inter = j2.getJSONArray("result");
         JSONObject jobj = (JSONObject) inter.get(0);
-
         JSONArray jreq = jobj.getJSONArray("value");
 
-/*
-        System.out.println("time stamp: " + jreq.getString(0));
-*/
-        System.out.println("lag: " + Double.parseDouble( jreq.getString(1)));
-
-        //System.out.println((System.currentTimeMillis()));
-
-        String ts = jreq.getString(0);
+        //System.out.println("lag: " + Double.parseDouble( jreq.getString(1)));
+        /*String ts = jreq.getString(0);
         ts = ts.replace(".", "");
         //TODO attention to the case where after the . there are less less than 3 digits
         SimpleDateFormat sdf = new SimpleDateFormat("MMM dd,yyyy HH:mm:ss");
         Date d = new Date(Long.parseLong(ts));
-       /* log.info(" timestamp {} corresponding date {} :", ts, sdf.format(d));*/
+       *//* log.info(" timestamp {} corresponding date {} :", ts, sdf.format(d));*/
         return Double.parseDouble( jreq.getString(1));
     }
 
@@ -378,7 +307,6 @@ public class PrometheusHttpClient {
 
     private static void downScaleLogic(double totalArrivalRate, int size) {
         if ((totalArrivalRate ) < (size - 1) * poll) {
-
             log.info("since  arrival rate {} is lower than maximum consumption rate " +
                             " with size - 1  I down scaled  by one {}",
                     totalArrivalRate, size * poll);
