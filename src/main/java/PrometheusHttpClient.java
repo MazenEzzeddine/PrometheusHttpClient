@@ -67,12 +67,18 @@ public class PrometheusHttpClient {
         //  "sum(kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22, namespace=%22kubernetes_namespace%7D)%20by%20(consumergroup,topic)"
         //sum(kafka_consumergroup_lag{consumergroup=~"$consumergroup",topic=~"$topic", namespace=~"$kubernetes_namespace"}) by (consumergroup, topic)
 
-        String all4 = "http://prometheus-operated:9090/api/v1/query?query=" + "sum(kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22,namespace=%22default%22%7D)%20by%20(consumergroup,topic)";
-        String p0lag = "http://prometheus-operated:9090/api/v1/query?query=" + "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22,partition=%220%22,namespace=%22default%22%7D";
-        String p1lag = "http://prometheus-operated:9090/api/v1/query?query=" + "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22,partition=%221%22,namespace=%22default%22%7D";
-        String p2lag = "http://prometheus-operated:9090/api/v1/query?query=" + "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22,partition=%222%22,namespace=%22default%22%7D";
-        String p3lag = "http://prometheus-operated:9090/api/v1/query?query=" + "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22,partition=%223%22,namespace=%22default%22%7D";
-        String p4lag = "http://prometheus-operated:9090/api/v1/query?query=" + "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22,partition=%224%22,namespace=%22default%22%7D";
+        String all4 = "http://prometheus-operated:9090/api/v1/query?query=" +
+                "sum(kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22,namespace=%22default%22%7D)%20by%20(consumergroup,topic)";
+        String p0lag = "http://prometheus-operated:9090/api/v1/query?query=" +
+                "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22,partition=%220%22,namespace=%22default%22%7D";
+        String p1lag = "http://prometheus-operated:9090/api/v1/query?query=" +
+                "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22,partition=%221%22,namespace=%22default%22%7D";
+        String p2lag = "http://prometheus-operated:9090/api/v1/query?query=" +
+                "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22,partition=%222%22,namespace=%22default%22%7D";
+        String p3lag = "http://prometheus-operated:9090/api/v1/query?query=" +
+                "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22,partition=%223%22,namespace=%22default%22%7D";
+        String p4lag = "http://prometheus-operated:9090/api/v1/query?query=" +
+                "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22,partition=%224%22,namespace=%22default%22%7D";
 
         List<URI> targets = Arrays.asList(
                 new URI(all3),
@@ -95,9 +101,7 @@ public class PrometheusHttpClient {
         );
 
         while (true) {
-
             Instant start = Instant.now();
-
                 List<CompletableFuture<String>> futures = targets.stream()
                         .map(target -> client
                                 .sendAsync(
@@ -135,7 +139,6 @@ public class PrometheusHttpClient {
             arrival = !arrival;
             }
 
-
             int partitionn = 0;
             Double totalarrivals=0.0;
             for (CompletableFuture cf : partitionsfutures) {
@@ -144,30 +147,28 @@ public class PrometheusHttpClient {
 
             }
             log.info("totalArrivalRate {}", totalarrivals);
-
           partitionn = 0;
           Double totallag=0.0;
-
             for (CompletableFuture cf : partitionslagfuture) {
                 totallag += parseJsonArrivalLag((String) cf.get(), partitionn);
                 partitionn++;
             }
-
             log.info("totallag {}", totallag);
-
             Instant end = Instant.now();
-
-            log.info("Duration in seconds to query prometheus for arrival rate and lag and parse result {}", Duration.between(start,end).toMillis());
-
+            log.info("Duration in seconds to query prometheus for " +
+                            "arrival rate and lag and parse result {}",
+                    Duration.between(start,end).toMillis());
             log.info("sleeping for 5000ms");
             log.info("==================================================");
 
+            queryConsumerGroup();
+            youMightWanttoScale(totalarrivals);
+
             try {
                     Thread.sleep(5000);
-
                 } catch (InterruptedException e) {
                     e.printStackTrace();
-                }
+            }
         }
     }
 
@@ -181,7 +182,6 @@ public class PrometheusHttpClient {
          size = consumerGroupDescriptionMap.get(PrometheusHttpClient.CONSUMER_GROUP).members().size();
         log.info("number of consumers {}", size );
     }
-
 
     private static void readEnvAndCrateAdminClient() {
         log.info("inside read env");
@@ -206,8 +206,6 @@ public class PrometheusHttpClient {
         } else {
             log.info("Not checking  upscale logic, Up scale cool down has not ended yet");
         }
-
-
         if (Duration.between(lastDownScaleDecision, Instant.now()).toSeconds() >= 30 ) {
             log.info("DownScaling logic, Down scale cool down has ended");
             downScaleLogic(totalArrivalRate, size);
@@ -244,9 +242,7 @@ public class PrometheusHttpClient {
         JSONObject jobj = (JSONObject) inter.get(0);
         JSONArray jreq = jobj.getJSONArray("value");
         log.info("the partition is {}", p);
-
         log.info("partition lag  {}",  Double.parseDouble( jreq.getString(1)));
-
         return Double.parseDouble( jreq.getString(1));
     }
 
@@ -288,7 +284,6 @@ public class PrometheusHttpClient {
 
 
     private static void upScaleLogic(double totalArrivalRate, int size) {
-
         log.info("current totalArrivalRate {}, group size {}", totalArrivalRate, size);
         if (totalArrivalRate > size *poll) {
             log.info("Consumers are less than nb partition we can scale");
@@ -301,9 +296,6 @@ public class PrometheusHttpClient {
             lastDownScaleDecision = Instant.now();
         }
     }
-
-
-
 
     private static void downScaleLogic(double totalArrivalRate, int size) {
         if ((totalArrivalRate ) < (size - 1) * poll) {
@@ -323,6 +315,4 @@ public class PrometheusHttpClient {
             }
         }
     }
-
-
 }
