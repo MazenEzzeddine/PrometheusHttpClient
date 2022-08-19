@@ -51,34 +51,62 @@ public class PrometheusHttpClient {
 
         HttpClient client = HttpClient.newHttpClient();
         String all3 = "http://prometheus-operated:9090/api/v1/query?" +
-                "query=sum(rate(kafka_topic_partition_current_offset%7Btopic=%22testtopic1%22,namespace=%22default%22%7D%5B1m%5D))%20by%20(topic)";
+                "query=sum(rate(kafka_topic_partition_current_offset%7Btopic=%22testtopic2%22,namespace=%22default%22%7D%5B1m%5D))%20by%20(topic)";
         String p0 =   "http://prometheus-operated:9090/api/v1/query?" +
-                "query=sum(rate(kafka_topic_partition_current_offset%7Btopic=%22testtopic1%22,partition=%220%22,namespace=%22default%22%7D%5B1m%5D))";
+                "query=sum(rate(kafka_topic_partition_current_offset%7Btopic=%22testtopic2%22,partition=%220%22,namespace=%22default%22%7D%5B1m%5D))";
         String p1 =   "http://prometheus-operated:9090/api/v1/query?" +
-                "query=sum(rate(kafka_topic_partition_current_offset%7Btopic=%22testtopic1%22,partition=%221%22,namespace=%22default%22%7D%5B1m%5D))";
+                "query=sum(rate(kafka_topic_partition_current_offset%7Btopic=%22testtopic2%22,partition=%221%22,namespace=%22default%22%7D%5B1m%5D))";
         String p2 =   "http://prometheus-operated:9090/api/v1/query?" +
-                "query=sum(rate(kafka_topic_partition_current_offset%7Btopic=%22testtopic1%22,partition=%222%22,namespace=%22default%22%7D%5B1m%5D))";
+                "query=sum(rate(kafka_topic_partition_current_offset%7Btopic=%22testtopic2%22,partition=%222%22,namespace=%22default%22%7D%5B1m%5D))";
         String p3 =   "http://prometheus-operated:9090/api/v1/query?" +
-                "query=sum(rate(kafka_topic_partition_current_offset%7Btopic=%22testtopic1%22,partition=%223%22,namespace=%22default%22%7D%5B1m%5D))";
+                "query=sum(rate(kafka_topic_partition_current_offset%7Btopic=%22testtopic2%22,partition=%223%22,namespace=%22default%22%7D%5B1m%5D))";
         String p4 =   "http://prometheus-operated:9090/api/v1/query?" +
-                "query=sum(rate(kafka_topic_partition_current_offset%7Btopic=%22testtopic1%22,partition=%224%22,namespace=%22default%22%7D%5B1m%5D))";
+                "query=sum(rate(kafka_topic_partition_current_offset%7Btopic=%22testtopic2%22,partition=%224%22,namespace=%22default%22%7D%5B1m%5D))";
+        String p5 =   "http://prometheus-operated:9090/api/v1/query?" +
+                "query=sum(rate(kafka_topic_partition_current_offset%7Btopic=%22testtopic2%22,partition=%225%22,namespace=%22default%22%7D%5B1m%5D))";
+        String p6 =   "http://prometheus-operated:9090/api/v1/query?" +
+                "query=sum(rate(kafka_topic_partition_current_offset%7Btopic=%22testtopic2%22,partition=%226%22,namespace=%22default%22%7D%5B1m%5D))";
+        String p7 =   "http://prometheus-operated:9090/api/v1/query?" +
+                "query=sum(rate(kafka_topic_partition_current_offset%7Btopic=%22testtopic2%22,partition=%227%22,namespace=%22default%22%7D%5B1m%5D))";
+        String p8 =   "http://prometheus-operated:9090/api/v1/query?" +
+                "query=sum(rate(kafka_topic_partition_current_offset%7Btopic=%22testtopic2%22,partition=%228%22,namespace=%22default%22%7D%5B1m%5D))";
+        String p9 =   "http://prometheus-operated:9090/api/v1/query?" +
+                "query=sum(rate(kafka_topic_partition_current_offset%7Btopic=%22testtopic2%22,partition=%229%22,namespace=%22default%22%7D%5B1m%5D))";
+        String p10 =   "http://prometheus-operated:9090/api/v1/query?" +
+                "query=sum(rate(kafka_topic_partition_current_offset%7Btopic=%22testtopic2%22,partition=%2210%22,namespace=%22default%22%7D%5B1m%5D))";
+        String p11 =   "http://prometheus-operated:9090/api/v1/query?" +
+                "query=sum(rate(kafka_topic_partition_current_offset%7Btopic=%22testtopic2%22,partition=%2211%22,namespace=%22default%22%7D%5B1m%5D))";
 
 
         //  "sum(kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22, namespace=%22kubernetes_namespace%7D)%20by%20(consumergroup,topic)"
         //sum(kafka_consumergroup_lag{consumergroup=~"$consumergroup",topic=~"$topic", namespace=~"$kubernetes_namespace"}) by (consumergroup, topic)
 
         String all4 = "http://prometheus-operated:9090/api/v1/query?query=" +
-                "sum(kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22,namespace=%22default%22%7D)%20by%20(consumergroup,topic)";
+                "sum(kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic2%22,namespace=%22default%22%7D)%20by%20(consumergroup,topic)";
         String p0lag = "http://prometheus-operated:9090/api/v1/query?query=" +
-                "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22,partition=%220%22,namespace=%22default%22%7D";
+                "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic2%22,partition=%220%22,namespace=%22default%22%7D";
         String p1lag = "http://prometheus-operated:9090/api/v1/query?query=" +
-                "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22,partition=%221%22,namespace=%22default%22%7D";
+                "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic2%22,partition=%221%22,namespace=%22default%22%7D";
         String p2lag = "http://prometheus-operated:9090/api/v1/query?query=" +
-                "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22,partition=%222%22,namespace=%22default%22%7D";
+                "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic2%22,partition=%222%22,namespace=%22default%22%7D";
         String p3lag = "http://prometheus-operated:9090/api/v1/query?query=" +
-                "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22,partition=%223%22,namespace=%22default%22%7D";
+                "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic2%22,partition=%223%22,namespace=%22default%22%7D";
         String p4lag = "http://prometheus-operated:9090/api/v1/query?query=" +
-                "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic1%22,partition=%224%22,namespace=%22default%22%7D";
+                "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic2%22,partition=%224%22,namespace=%22default%22%7D";
+        String p5lag = "http://prometheus-operated:9090/api/v1/query?query=" +
+                "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic2%22,partition=%225%22,namespace=%22default%22%7D";
+        String p6lag = "http://prometheus-operated:9090/api/v1/query?query=" +
+                "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic2%22,partition=%226%22,namespace=%22default%22%7D";
+        String p7lag = "http://prometheus-operated:9090/api/v1/query?query=" +
+                "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic2%22,partition=%227%22,namespace=%22default%22%7D";
+        String p8lag = "http://prometheus-operated:9090/api/v1/query?query=" +
+                "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic2%22,partition=%228%22,namespace=%22default%22%7D";
+        String p9lag = "http://prometheus-operated:9090/api/v1/query?query=" +
+                "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic2%22,partition=%229%22,namespace=%22default%22%7D";
+        String p10lag = "http://prometheus-operated:9090/api/v1/query?query=" +
+                "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic2%22,partition=%2210%22,namespace=%22default%22%7D";
+        String p11lag = "http://prometheus-operated:9090/api/v1/query?query=" +
+                "kafka_consumergroup_lag%7Bconsumergroup=%22testgroup1%22,topic=%22testtopic2%22,partition=%2211%22,namespace=%22default%22%7D";
 
         List<URI> targets = Arrays.asList(
                 new URI(all3),
@@ -90,14 +118,28 @@ public class PrometheusHttpClient {
                 new URI(p1),
                 new URI(p2),
                 new URI(p3),
-                new URI(p4)
+                new URI(p4),
+                new URI(p5),
+                new URI(p6),
+                new URI(p7),
+                new URI(p8),
+                new URI(p9),
+                new URI(p10),
+                new URI(p11)
                 );
         List<URI> partitionslag = Arrays.asList(
                 new URI(p0lag),
                 new URI(p1lag),
                 new URI(p2lag),
                 new URI(p3lag),
-                new URI(p4lag)
+                new URI(p4lag),
+                new URI(p5lag),
+                new URI(p6lag),
+                new URI(p7lag),
+                new URI(p8lag),
+                new URI(p9lag),
+                new URI(p10lag),
+                new URI(p11lag)
         );
 
         while (true) {
